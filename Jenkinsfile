@@ -2,9 +2,11 @@ pipeline {
     agent any
 
     environment {
-        AWS_ACCOUNT_ID = '859666866036'
-        AWS_REGION     = 'ap-south-1'
-        ECR_REGISTRY   = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        AWS_ACCOUNT_ID     = '859666866036'
+        AWS_REGION         = 'ap-south-1'
+        ECR_REGISTRY       = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        AWS_ACCESS_KEY_ID     = credentials('aws-access-key-id')
+        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
     }
 
     stages {
@@ -17,8 +19,11 @@ pipeline {
         stage('Login to ECR') {
             steps {
                 sh '''
-                    aws ecr get-login-password --region ${AWS_REGION} | \
-                    docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                    docker run --rm \
+                        -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+                        -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+                        amazon/aws-cli ecr get-login-password --region $AWS_REGION \
+                        | docker login --username AWS --password-stdin $ECR_REGISTRY
                 '''
             }
         }
