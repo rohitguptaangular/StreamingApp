@@ -83,10 +83,28 @@ pipeline {
 
     post {
         success {
-            echo 'All images built and pushed to ECR successfully!'
+            sh '''
+                docker run --rm \
+                    -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+                    -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+                    amazon/aws-cli sns publish \
+                    --topic-arn arn:aws:sns:ap-south-1:859666866036:streaming-app-notifications \
+                    --subject "BUILD SUCCESS - StreamingApp" \
+                    --message "Jenkins build #${BUILD_NUMBER} completed successfully. All images pushed to ECR." \
+                    --region ap-south-1
+            '''
         }
         failure {
-            echo 'Pipeline failed! Check the logs above for errors.'
+            sh '''
+                docker run --rm \
+                    -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+                    -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+                    amazon/aws-cli sns publish \
+                    --topic-arn arn:aws:sns:ap-south-1:859666866036:streaming-app-notifications \
+                    --subject "BUILD FAILED - StreamingApp" \
+                    --message "Jenkins build #${BUILD_NUMBER} failed. Check Jenkins console for details." \
+                    --region ap-south-1
+            '''
         }
     }
 }
